@@ -2,8 +2,8 @@ name: Deploy to Hugging Face Spaces
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+    
 
 jobs:
   deploy:
@@ -12,38 +12,31 @@ jobs:
     steps:
       - name: Get code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install uv
-        run: pip install uv
-
-      - name: Install dependencies
-        run: uv sync --frozen
-
-      - name: Setup Git for Hugging Face
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Deploy to Hugging Face Spaces
+      - name: Deploy 
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USERNAME: ${{ secrets.HF_USERNAME }}
           HF_SPACE_NAME: ${{ secrets.HF_SPACE_NAME }}
-        run: |
-          # Clone the Hugging Face Space
-          git clone https://huggingface.co/spaces/$HF_SPACE_NAME hf_space
-          cd hf_space
+        run:  |
+          git config --global user.email "bot@github.com"
+          git config --global user.name "Bot"
+       
+           
+          git clone https://huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME hf
           
-          # Copy files from repository
-          cp -r ../. .
           
-          # Push to Hugging Face Spaces
+          # Copy all files from GitHub repo
+          cp server.py hf/
+          cp pyproject.toml hf/
+          cp uv.lock hf/
+          cp Dockerfile hf/
+          cp client.py hf/
+
+        
+          
+          # Push changes
           git add .
-          git commit -m "Deploy from GitHub: ${{ github.sha }}" || echo "No changes to commit"
-          git push https://$HF_TOKEN@huggingface.co/spaces/$HF_SPACE_NAME main
+          git commit -m "Deploy $(date)" || echo "No changes to commit"
+          git push https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME main
+          
